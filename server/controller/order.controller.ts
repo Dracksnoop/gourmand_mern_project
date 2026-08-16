@@ -93,6 +93,18 @@ export const cancelOrder = async (req: Request, res: Response) => {
 export const createCheckoutSession = async (req: Request, res: Response) => {
     try {
         const checkoutSessionRequest: CheckoutSessionRequest = req.body;
+
+        // Stripe rejects a session whose redirect targets are not absolute URLs, and an
+        // unset FRONTEND_URL turns them into "undefined/order/status". Saying so plainly
+        // beats a generic 500 from the Stripe client.
+        if (!process.env.FRONTEND_URL) {
+            console.error("FRONTEND_URL is not set; checkout cannot build its redirect URLs.");
+            return res.status(500).json({
+                success: false,
+                message: "Checkout is not configured on the server."
+            });
+        }
+
         const restaurant = await Restaurant.findById(checkoutSessionRequest.restaurantId).populate('menus');
         if (!restaurant) {
             return res.status(404).json({

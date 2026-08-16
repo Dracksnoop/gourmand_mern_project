@@ -38,9 +38,20 @@ app.use(cors({
     credentials: true,
 }));
 
-// crossOriginResourcePolicy is relaxed because menu and restaurant images are served
-// from Cloudinary rather than from this origin.
-app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
+// Restaurant and menu photography is hosted on Cloudinary and Unsplash, so the default
+// img-src of 'self' data: blocks every image once Express is the one serving the page.
+// In development this never shows up, because Vite serves the HTML and only the API
+// responses carry these headers.
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: {
+        directives: {
+            ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+            "img-src": ["'self'", "data:", "https:"],
+            "connect-src": ["'self'", "https://api.stripe.com"],
+        },
+    },
+}));
 
 // Login, signup and password reset are the endpoints worth guessing at, so they get a
 // tighter budget than ordinary browsing. Each one builds its own limiter: sharing a
