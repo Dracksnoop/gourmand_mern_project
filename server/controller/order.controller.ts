@@ -1,7 +1,12 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import { Restaurant } from "../models/restaurant.model";
 import { Order } from "../models/order.model";
 import Stripe from "stripe";
+
+// Once the kitchen has started cooking, cancelling is a conversation with the
+// restaurant rather than something the customer can do on their own.
+const CANCELLABLE_STATUSES = ["pending", "confirmed"];
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -24,10 +29,60 @@ type CheckoutSessionRequest = {
 
 export const getOrders = async (req: Request, res: Response) => {
     try {
-        const orders = await Order.find({ user: req.id }).populate('user').populate('restaurant');
+        const orders = await Order.find({ user: req.id })
+            .sort({ createdAt: -1 })
+            .populate('user')
+            .populate('restaurant');
         return res.status(200).json({
             success: true,
             orders
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ success: false, message: "Internal server error" });
+    }
+}
+
+export const cancelOrder = async (req: Request, res: Response) => {
+    try {
+        const { orderId } = req.params;
+        const { reason } = req.body;
+
+        if (!mongoose.isValidObjectId(orderId)) {
+            return res.status(404).json({ success: false, message: "Order not found" });
+        }
+
+        const order = await Order.findById(orderId);
+        if (!order) {
+            return res.status(404).json({ success: false, message: "Order not found" });
+        }
+
+        // Scoped to the person who placed it, so knowing an order id is not enough to
+        // cancel somebody else's dinner.
+        if (order.user.toString() !== req.id) {
+            return res.status(403).json({ success: false, message: "This is not your order" });
+        }
+
+        if (order.status === "cancelled") {
+            return res.status(400).json({ success: false, message: "This order is already cancelled" });
+        }
+
+        if (!CANCELLABLE_STATUSES.includes(order.status)) {
+            return res.status(400).json({
+                success: false,
+                message: "This order has already been prepared and can no longer be cancelled"
+            });
+        }
+
+        order.status = "cancelled";
+        order.cancellationReason = (reason || "").trim() || "No reason given";
+        order.cancelledAt = new Date();
+        await order.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Order cancelled",
+            order
         });
     } catch (error) {
         console.log(error);

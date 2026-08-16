@@ -38,6 +38,26 @@ export const useOrderStore = create<OrderState>()(persist((set => ({
             toast.error(error?.response?.data?.message || "Could not load your orders.");
             set({loading:false});
         }
+    },
+    cancelOrder: async (orderId: string, reason: string) => {
+        try {
+            set({ loading: true });
+            const response = await axios.put(`${API_END_POINT}/${orderId}/cancel`, { reason });
+            if (response.data.success) {
+                toast.success(response.data.message);
+                // Merged rather than replaced: the cancel response is not populated with
+                // the restaurant, and dropping it would blank out the card.
+                set((state) => ({
+                    loading: false,
+                    orders: state.orders.map((order) =>
+                        order._id === orderId ? { ...order, ...response.data.order } : order
+                    )
+                }));
+            }
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || "Could not cancel this order.");
+            set({ loading: false });
+        }
     }
 })), {
     name: 'order-name',
