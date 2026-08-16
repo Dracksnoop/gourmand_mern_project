@@ -6,6 +6,20 @@ states from an admin area.
 
 Built on the MERN stack with TypeScript end to end.
 
+**Live:** <https://gourmand-mern-project-1.onrender.com>
+
+The login screen has a one click sign in for both roles, so there is nothing to
+register for. Signing up does work, but the confirmation email will not arrive: the
+free mail tier only delivers to the address the account is registered under.
+
+| Role | Email | Password |
+| ---- | ----- | -------- |
+| Customer | `demo@gourmand.app` | `demo1234` |
+| Restaurant owner | `anita@kesarrasoi.in` | `gourmand123` |
+
+Hosted on a free tier that sleeps when idle, so the first request after a quiet period
+takes about a minute to wake up.
+
 ## Stack
 
 | Layer    | Choice |

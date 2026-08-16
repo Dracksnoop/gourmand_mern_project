@@ -6,6 +6,7 @@ import { useUserStore } from "@/store/useUserStore";
 import { Loader2, LockKeyhole, Mail, Utensils } from "lucide-react";
 import { ChangeEvent, FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import DemoAccessPanel from "@/components/DemoAccessPanel";
 
 const Login = () => {
   const [input, setInput] = useState<LoginInputState>({
@@ -47,6 +48,15 @@ const Login = () => {
             <h1 className="font-extrabold text-2xl">Gourmand</h1>
           </div>
           <p className="text-sm text-gray-500 mt-1">Welcome back. Sign in to order.</p>
+        </div>
+
+        <DemoAccessPanel />
+
+        <div className="relative mb-6">
+          <Separator />
+          <span className="absolute left-1/2 -translate-x-1/2 -top-2 px-2 text-[11px] uppercase tracking-wide text-gray-400 bg-white dark:bg-gray-800">
+            or sign in yourself
+          </span>
         </div>
         <div className="mb-4">
           <div className="relative">

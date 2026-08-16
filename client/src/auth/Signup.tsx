@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { SignupInputState, userSignupSchema } from "@/schema/userSchema";
 import { useUserStore } from "@/store/useUserStore";
-import { Loader2, LockKeyhole, Mail, PhoneOutgoing, User, Utensils } from "lucide-react";
+import { Info, Loader2, LockKeyhole, Mail, PhoneOutgoing, User, Utensils } from "lucide-react";
 import { ChangeEvent, FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -50,6 +50,21 @@ const navigate = useNavigate();
             <h1 className="font-extrabold text-2xl">Gourmand</h1>
           </div>
           <p className="text-sm text-gray-500 mt-1">Create an account to start ordering.</p>
+        </div>
+
+        <div className="rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-900/20 p-3 mb-5">
+          <div className="flex items-start gap-2">
+            <Info size={15} className="mt-0.5 shrink-0 text-orange" />
+            <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+              Your account will be created, but the confirmation email will not arrive:
+              the free mail service behind this demo only delivers to the owner's own
+              address.{" "}
+              <Link to="/login" className="text-orange font-medium hover:underline">
+                Use a demo account instead
+              </Link>{" "}
+              to look around straight away.
+            </p>
+          </div>
         </div>
         <div className="mb-4">
           <div className="relative">
