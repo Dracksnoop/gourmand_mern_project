@@ -90,19 +90,18 @@ export const stripeWebhook = async (req: Request, res: Response) => {
 
     try {
         const signature = req.headers["stripe-signature"];
+        if (!signature) {
+            return res.status(400).send("Missing stripe-signature header");
+        }
 
-        // Construct the payload string for verification
-        const payloadString = JSON.stringify(req.body, null, 2);
-        const secret = process.env.WEBHOOK_ENDPOINT_SECRET!;
-
-        // Generate test header string for event construction
-        const header = stripe.webhooks.generateTestHeaderString({
-            payload: payloadString,
-            secret,
-        });
-
-        // Construct the event using the payload string and header
-        event = stripe.webhooks.constructEvent(payloadString, header, secret);
+        // req.body is the raw Buffer here (see the parser mounted in server/index.ts).
+        // Verifying against the signature Stripe actually sent is the whole point: the
+        // secret proves the call came from Stripe and the body has not been altered.
+        event = stripe.webhooks.constructEvent(
+            req.body,
+            signature,
+            process.env.WEBHOOK_ENDPOINT_SECRET!
+        );
     } catch (error: any) {
         console.error('Webhook error:', error.message);
         return res.status(400).send(`Webhook error: ${error.message}`);
