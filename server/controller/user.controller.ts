@@ -7,6 +7,14 @@ import { generateVerificationCode } from "../utils/generateVerificationCode";
 import { generateToken } from "../utils/generateToken";
 import { sendPasswordResetEmail, sendResetSuccessEmail, sendVerificationEmail, sendWelcomeEmail } from "../mailtrap/email";
 
+// Anything in here must never reach the client. Leaving the verification and reset
+// tokens on the payload would let a caller confirm an address they don't own.
+const SAFE_USER_FIELDS = "-password -verificationToken -verificationTokenExpiresAt -resetPasswordToken -resetPasswordTokenExpiresAt";
+
+// Reset tokens are stored as a digest, never in the clear. The raw token exists only in
+// the email we send, so a copy of the users collection is not enough to hijack accounts.
+const hashResetToken = (token: string) => crypto.createHash("sha256").update(token).digest("hex");
+
 export const signup = async (req: Request, res: Response) => {
     try {
         const { fullname, email, password, contact } = req.body;
@@ -31,9 +39,15 @@ export const signup = async (req: Request, res: Response) => {
         })
         generateToken(res,user);
 
-        await sendVerificationEmail(email, verificationToken);
+        // A failure here must not undo the signup, so it is logged and swallowed.
+        // The user can still verify later from the resend flow.
+        try {
+            await sendVerificationEmail(email, verificationToken);
+        } catch (error) {
+            console.error(`Could not send verification email to ${email}:`, error);
+        }
 
-        const userWithoutPassword = await User.findOne({ email }).select("-password");
+        const userWithoutPassword = await User.findOne({ email }).select(SAFE_USER_FIELDS);
         return res.status(201).json({
             success: true,
             message: "Account created successfully",
@@ -65,8 +79,7 @@ export const login = async (req: Request, res: Response) => {
         user.lastLogin = new Date();
         await user.save();
 
-        // send user without passowrd
-        const userWithoutPassword = await User.findOne({ email }).select("-password");
+        const userWithoutPassword = await User.findOne({ email }).select(SAFE_USER_FIELDS);
         return res.status(200).json({
             success: true,
             message: `Welcome back ${user.fullname}`,
@@ -81,7 +94,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
     try {
         const { verificationCode } = req.body;
        
-        const user = await User.findOne({ verificationToken: verificationCode, verificationTokenExpiresAt: { $gt: Date.now() } }).select("-password");
+        const user = await User.findOne({ verificationToken: verificationCode, verificationTokenExpiresAt: { $gt: Date.now() } });
 
         if (!user) {
             return res.status(400).json({
@@ -94,13 +107,17 @@ export const verifyEmail = async (req: Request, res: Response) => {
         user.verificationTokenExpiresAt = undefined
         await user.save();
 
-        // send welcome email
-        await sendWelcomeEmail(user.email, user.fullname);
+        try {
+            await sendWelcomeEmail(user.email, user.fullname);
+        } catch (error) {
+            console.error(`Could not send welcome email to ${user.email}:`, error);
+        }
 
+        const verifiedUser = await User.findById(user._id).select(SAFE_USER_FIELDS);
         return res.status(200).json({
             success: true,
             message: "Email verified successfully.",
-            user,
+            user: verifiedUser,
         })
     } catch (error) {
         console.log(error);
@@ -123,27 +140,31 @@ export const forgotPassword = async (req: Request, res: Response) => {
         const { email } = req.body;
         const user = await User.findOne({ email });
 
+        // Answer identically whether or not the address is registered, otherwise this
+        // endpoint doubles as a way to enumerate which emails have accounts.
+        const acknowledgement = {
+            success: true,
+            message: "If an account exists for that address, a reset link is on its way."
+        };
+
         if (!user) {
-            return res.status(400).json({
-                success: false,
-                message: "User doesn't exist"
-            });
+            return res.status(200).json(acknowledgement);
         }
 
         const resetToken = crypto.randomBytes(40).toString('hex');
         const resetTokenExpiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 hour
 
-        user.resetPasswordToken = resetToken;
+        user.resetPasswordToken = hashResetToken(resetToken);
         user.resetPasswordTokenExpiresAt = resetTokenExpiresAt;
         await user.save();
 
-        // send email
-        await sendPasswordResetEmail(user.email, `${process.env.FRONTEND_URL}/resetpassword/${resetToken}`);
+        try {
+            await sendPasswordResetEmail(user.email, `${process.env.FRONTEND_URL}/reset-password/${resetToken}`);
+        } catch (error) {
+            console.error(`Could not send password reset email to ${user.email}:`, error);
+        }
 
-        return res.status(200).json({
-            success: true,
-            message: "Password reset link sent to your email"
-        });
+        return res.status(200).json(acknowledgement);
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: "Internal server error" });
@@ -153,7 +174,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     try {
         const { token } = req.params;
         const { newPassword } = req.body;
-        const user = await User.findOne({ resetPasswordToken: token, resetPasswordTokenExpiresAt: { $gt: Date.now() } });
+        const user = await User.findOne({ resetPasswordToken: hashResetToken(token), resetPasswordTokenExpiresAt: { $gt: Date.now() } });
         if (!user) {
             return res.status(400).json({
                 success: false,
@@ -167,8 +188,11 @@ export const resetPassword = async (req: Request, res: Response) => {
         user.resetPasswordTokenExpiresAt = undefined;
         await user.save();
 
-        // send success reset email
-        await sendResetSuccessEmail(user.email);
+        try {
+            await sendResetSuccessEmail(user.email);
+        } catch (error) {
+            console.error(`Could not send reset confirmation email to ${user.email}:`, error);
+        }
 
         return res.status(200).json({
             success: true,
@@ -182,7 +206,7 @@ export const resetPassword = async (req: Request, res: Response) => {
 export const checkAuth = async (req: Request, res: Response) => {
     try {
         const userId = req.id;
-        const user = await User.findById(userId).select("-password");
+        const user = await User.findById(userId).select(SAFE_USER_FIELDS);
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -202,12 +226,24 @@ export const updateProfile = async (req: Request, res: Response) => {
     try {
         const userId = req.id;
         const { fullname, email, address, city, country, profilePicture } = req.body;
-        // upload image on cloudinary
-        let cloudResponse: any;
-        cloudResponse = await cloudinary.uploader.upload(profilePicture);
-        const updatedData = {fullname, email, address, city, country, profilePicture};
 
-        const user = await User.findByIdAndUpdate(userId, updatedData,{new:true}).select("-password");
+        const updatedData: Record<string, string> = { fullname, email, address, city, country };
+
+        // The client only sends profilePicture when a new file was picked, and it arrives
+        // as a data URI. Saving that string straight to Mongo would store the whole image
+        // in the document, so upload it and keep the hosted URL instead.
+        if (profilePicture) {
+            const uploadResponse = await cloudinary.uploader.upload(profilePicture);
+            updatedData.profilePicture = uploadResponse.secure_url;
+        }
+
+        const user = await User.findByIdAndUpdate(userId, updatedData, { new: true }).select(SAFE_USER_FIELDS);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
 
         return res.status(200).json({
             success:true,

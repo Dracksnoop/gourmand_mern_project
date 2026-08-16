@@ -28,9 +28,15 @@ const userSchema = new mongoose.Schema<IUserDocument>({
         type: String,
         required: true
     },
+    // Unique is enforced here rather than only in the controller: the "does this email
+    // already exist" lookup and the insert are two separate round trips, so two
+    // simultaneous signups could both pass the check and create duplicate accounts.
     email: {
         type: String,
-        required: true
+        required: true,
+        unique: true,
+        lowercase: true,
+        trim: true
     },
     password: {
         type: String,
