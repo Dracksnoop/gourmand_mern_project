@@ -18,6 +18,13 @@ const app = express();
 const PORT = Number(process.env.PORT) || 8000;
 const DIRNAME = path.resolve();
 
+// Hosts like Render terminate TLS at their own proxy and forward the original client
+// address in X-Forwarded-For. Without this every request looks like it came from the
+// proxy, which would put all users into a single rate limit bucket.
+if (process.env.NODE_ENV === "production") {
+    app.set("trust proxy", 1);
+}
+
 // Stripe signs the exact bytes it sends, so the webhook has to see the raw body.
 // Mounting this ahead of the JSON parser stops express from consuming it first.
 app.use("/api/v1/order/webhook", express.raw({ type: "application/json" }));

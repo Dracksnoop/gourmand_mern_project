@@ -83,6 +83,52 @@ npm run stripe   # forwards Stripe events to the local webhook
 
 Card `4242 4242 4242 4242`, any future expiry, any CVC.
 
+## Deploying
+
+In production the API process also serves the built client, so the whole app is a
+single service and the frontend calls the API on its own origin.
+
+```bash
+npm run build   # installs both workspaces, builds the client, compiles the server
+npm start       # node dist/server/index.js
+```
+
+The pieces, all on free tiers:
+
+| Piece | Service |
+| ----- | ------- |
+| Database | MongoDB Atlas, M0 shared cluster |
+| App | Render web service |
+| Images | Cloudinary |
+| Email | Mailtrap |
+| Payments | Stripe test mode |
+
+**Atlas.** Create an M0 cluster and a database user, and allow access from anywhere
+(`0.0.0.0/0`) since the host's outbound address is not fixed. Take the connection
+string and append the database name, e.g. `...mongodb.net/gourmand`.
+
+**Render.** Create a web service from the repository with build command `npm run build`
+and start command `npm start`, then set every variable from `.env.example`. Set
+`NODE_ENV=production`, and point `CLIENT_URL` and `FRONTEND_URL` at the service's own
+URL — they drive the Stripe redirect and the links in outgoing email.
+
+**Seeding.** The free tier has no shell, so seed from your machine against the remote
+database:
+
+```bash
+MONGO_URI="<your atlas uri>" npm run seed
+```
+
+**Stripe.** Add a webhook endpoint at `https://<your-app>/api/v1/order/webhook`
+subscribed to `checkout.session.completed`, and copy that endpoint's signing secret
+into `WEBHOOK_ENDPOINT_SECRET`. The secret printed by `stripe listen` is for local
+development only and will not verify events sent to the deployed app.
+
+Two things to expect: free Render services sleep after inactivity, so the first request
+after a quiet period takes about a minute; and Mailtrap's demo domain only delivers to
+the address the Mailtrap account is registered under, so verification email will not
+reach anyone else. Signup still succeeds regardless, because the send is best-effort.
+
 ## Layout
 
 ```

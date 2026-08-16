@@ -7,8 +7,9 @@
     "dev": "nodemon server/index.ts",
     "seed": "ts-node server/seed/index.ts",
     "stripe": "stripe listen --forward-to localhost:8000/api/v1/order/webhook",
-    "build": "npm install && npm install --prefix client && npm run build --prefix client",
-    "start": "nodemon server/index.ts"
+    "build:server": "tsc -p tsconfig.json",
+    "build": "npm install --include=dev && npm install --prefix client --include=dev && npm run build --prefix client && npm run build:server",
+    "start": "node dist/server/index.js"
   },
   "keywords": [],
   "author": "Krishna Gurjar",
