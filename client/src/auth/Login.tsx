@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { LoginInputState, userLoginSchema } from "@/schema/userSchema";
 import { useUserStore } from "@/store/useUserStore";
-import { Loader2, LockKeyhole, Mail } from "lucide-react";
+import { Loader2, LockKeyhole, Mail, Utensils } from "lucide-react";
 import { ChangeEvent, FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -36,13 +36,17 @@ const Login = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 px-4">
       <form
         onSubmit={loginSubmitHandler}
-        className="md:p-8 w-full max-w-md rounded-lg md:border border-gray-200 mx-4"
+        className="w-full max-w-md p-6 md:p-8 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm"
       >
-        <div className="mb-4">
-          <h1 className="font-bold text-2xl">Gourmand</h1>
+        <div className="mb-6 text-center">
+          <div className="flex items-center justify-center gap-2">
+            <Utensils className="text-orange" size={22} />
+            <h1 className="font-extrabold text-2xl">Gourmand</h1>
+          </div>
+          <p className="text-sm text-gray-500 mt-1">Welcome back. Sign in to order.</p>
         </div>
         <div className="mb-4">
           <div className="relative">
@@ -55,7 +59,7 @@ const Login = () => {
               className="pl-10 focus-visible:ring-1"
             />
             <Mail className="absolute inset-y-2 left-2 text-gray-500 pointer-events-none" />
-            {errors && (
+            {errors.email && (
               <span className="text-xs text-red-500">{errors.email}</span>
             )}
           </div>
@@ -71,7 +75,7 @@ const Login = () => {
               className="pl-10 focus-visible:ring-1"
             />
             <LockKeyhole className="absolute inset-y-2 left-2 text-gray-500 pointer-events-none" />
-            {errors && (
+            {errors.password && (
               <span className="text-xs text-red-500">{errors.password}</span>
             )}
           </div>

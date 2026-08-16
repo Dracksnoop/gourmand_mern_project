@@ -1,33 +1,51 @@
-import {
-  Loader2,
-  LocateIcon,
-  Mail,
-  MapPin ,
-  MapPinnedIcon,
-  Plus,
-} from "lucide-react";
+import { Loader2, LocateIcon, Mail, MapPin, MapPinnedIcon, Plus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { FormEvent, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
 import { useUserStore } from "@/store/useUserStore";
 
+// "Krishna Gurjar" -> "KG". Used when the account has no picture yet.
+const getInitials = (name: string) =>
+  name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0].toUpperCase())
+    .join("") || "?";
+
 const Profile = () => {
-  const {user, updateProfile} = useUserStore();
+  const { user, updateProfile } = useUserStore();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [profileData, setProfileData] = useState({
     fullname: user?.fullname || "",
-    email: user?.email || "", 
+    email: user?.email || "",
     address: user?.address || "",
     city: user?.city || "",
     country: user?.country || "",
     profilePicture: user?.profilePicture || "",
   });
   const imageRef = useRef<HTMLInputElement | null>(null);
-  const [selectedProfilePicture, setSelectedProfilePicture] =
-    useState<string>( profileData.profilePicture || "");
- 
+  const [selectedProfilePicture, setSelectedProfilePicture] = useState<string>(
+    profileData.profilePicture || ""
+  );
+
+  // The store rehydrates from localStorage after the first render, so the initial
+  // state above can be built from an empty user and leave every field blank.
+  useEffect(() => {
+    if (!user) return;
+    setProfileData({
+      fullname: user.fullname || "",
+      email: user.email || "",
+      address: user.address || "",
+      city: user.city || "",
+      country: user.country || "",
+      profilePicture: user.profilePicture || "",
+    });
+    setSelectedProfilePicture(user.profilePicture || "");
+  }, [user]);
+
   const fileChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -60,13 +78,27 @@ const Profile = () => {
     }
   };
 
+  const fields = [
+    { name: "email", label: "Email", icon: Mail, disabled: true },
+    { name: "address", label: "Address", icon: LocateIcon, disabled: false },
+    { name: "city", label: "City", icon: MapPin, disabled: false },
+    { name: "country", label: "Country", icon: MapPinnedIcon, disabled: false },
+  ];
+
   return (
-    <form onSubmit={updateProfileHandler} className="max-w-7xl mx-auto my-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Avatar className="relative md:w-28 md:h-28 w-20 h-20">
-            <AvatarImage src={selectedProfilePicture}/>
-            <AvatarFallback>CN</AvatarFallback>
+    <div className="max-w-3xl mx-auto my-10 px-4">
+      <h1 className="text-2xl md:text-3xl font-extrabold mb-6">Your profile</h1>
+
+      <form
+        onSubmit={updateProfileHandler}
+        className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-sm"
+      >
+        <div className="flex flex-col sm:flex-row items-center gap-5 p-6 border-b border-gray-100 dark:border-gray-700">
+          <Avatar className="relative w-24 h-24 shrink-0">
+            <AvatarImage src={selectedProfilePicture} />
+            <AvatarFallback className="text-xl font-semibold">
+              {getInitials(profileData.fullname)}
+            </AvatarFallback>
             <input
               ref={imageRef}
               className="hidden"
@@ -78,80 +110,73 @@ const Profile = () => {
               onClick={() => imageRef.current?.click()}
               className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300 bg-black bg-opacity-50 rounded-full cursor-pointer"
             >
-              <Plus className="text-white w-8 h-8" />
+              <Plus className="text-white w-7 h-7" />
             </div>
           </Avatar>
-          <Input
-            type="text"
-            name="fullname"
-            value={profileData.fullname}
-            onChange={changeHandler}
-            className="font-bold text-2xl outline-none border-none focus-visible:ring-transparent"
-          />
-        </div>
-      </div>
-      <div className="grid md:grid-cols-4 md:gap-2 gap-3 my-10">
-        <div className="flex items-center gap-4 rounded-sm p-2 bg-gray-200">
-          <Mail className="text-gray-500" />
-          <div className="w-full">
-            <Label>Email</Label>
-            <input
-            disabled
-              name="email"
-              value={profileData.email}
+
+          <div className="w-full text-center sm:text-left">
+            <Label htmlFor="fullname" className="text-xs text-gray-500">
+              Display name
+            </Label>
+            <Input
+              id="fullname"
+              type="text"
+              name="fullname"
+              value={profileData.fullname}
               onChange={changeHandler}
-              className="w-full text-gray-600 bg-transparent focus-visible:ring-0 focus-visible:border-transparent outline-none border-none"
+              placeholder="Your name"
+              className="font-bold text-xl mt-1"
             />
+            <p className="text-xs text-gray-500 mt-2">
+              Click the picture to upload a new one.
+            </p>
           </div>
         </div>
-        <div className="flex items-center gap-4 rounded-sm p-2 bg-gray-200">
-          <LocateIcon className="text-gray-500" />
-          <div className="w-full">
-            <Label>Address</Label>
-            <input
-              name="address"
-              value={profileData.address}
-              onChange={changeHandler}
-              className="w-full text-gray-600 bg-transparent focus-visible:ring-0 focus-visible:border-transparent outline-none border-none"
-            />
-          </div>
+
+        <div className="grid sm:grid-cols-2 gap-4 p-6">
+          {fields.map(({ name, label, icon: Icon, disabled }) => (
+            <div key={name}>
+              <Label htmlFor={name} className="text-xs text-gray-500">
+                {label}
+              </Label>
+              <div className="relative mt-1">
+                <Icon
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                />
+                <Input
+                  id={name}
+                  name={name}
+                  disabled={disabled}
+                  value={profileData[name as keyof typeof profileData]}
+                  onChange={changeHandler}
+                  placeholder={`Add your ${label.toLowerCase()}`}
+                  className="pl-9"
+                />
+              </div>
+              {disabled && (
+                <p className="text-[11px] text-gray-400 mt-1">
+                  Your email is used to sign in and cannot be changed here.
+                </p>
+              )}
+            </div>
+          ))}
         </div>
-        <div className="flex items-center gap-4 rounded-sm p-2 bg-gray-200">
-          <MapPin className="text-gray-500" />
-          <div className="w-full">
-            <Label>City</Label>
-            <input
-              name="city"
-              value={profileData.city}
-              onChange={changeHandler}
-              className="w-full text-gray-600 bg-transparent focus-visible:ring-0 focus-visible:border-transparent outline-none border-none"
-            />
-          </div>
+
+        <div className="flex justify-end px-6 pb-6">
+          {isLoading ? (
+            <Button disabled className="bg-orange hover:bg-hoverOrange">
+              <Loader2 className="mr-2 w-4 h-4 animate-spin" />
+              Please wait
+            </Button>
+          ) : (
+            <Button type="submit" className="bg-orange hover:bg-hoverOrange px-8">
+              Save changes
+            </Button>
+          )}
         </div>
-        <div className="flex items-center gap-4 rounded-sm p-2 bg-gray-200">
-          <MapPinnedIcon className="text-gray-500" />
-          <div className="w-full">
-            <Label>Country</Label>
-            <input
-              name="country"
-              value={profileData.country}
-              onChange={changeHandler}
-              className="w-full text-gray-600 bg-transparent focus-visible:ring-0 focus-visible:border-transparent outline-none border-none"
-            />
-          </div>
-        </div>
-      </div>
-      <div className="text-center">
-        {isLoading ? (
-          <Button disabled className="bg-orange hover:bg-hoverOrange">
-            <Loader2 className="mr-2 w-4 h-4 animate-spin" />
-            Please wait
-          </Button>
-        ) : (
-          <Button type="submit" className="bg-orange hover:bg-hoverOrange">Update</Button>
-        )}
-      </div>
-    </form>
+      </form>
+    </div>
   );
 };
 

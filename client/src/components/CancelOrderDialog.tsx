@@ -60,7 +60,7 @@ const CancelOrderDialog = ({ open, setOpen, loading, onConfirm }: Props) => {
               className={cn(
                 "text-left text-sm px-3 py-2 rounded-md border transition-colors",
                 selected === option
-                  ? "border-orange bg-orange/10 font-medium"
+                  ? "border-orange bg-amber-50 dark:bg-amber-900/20 font-medium"
                   : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
               )}
             >

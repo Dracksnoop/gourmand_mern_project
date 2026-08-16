@@ -36,7 +36,7 @@ const OrderStatusTimeline = ({ status }: { status: string }) => {
                 reached
                   ? "bg-orange border-orange text-white"
                   : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400",
-                isCurrent && "ring-4 ring-orange/20"
+                isCurrent && "ring-4 ring-amber-200 dark:ring-amber-900"
               )}
             >
               <Icon size={16} />
