@@ -6,30 +6,41 @@ import { createJSONStorage, persist } from "zustand/middleware";
 
 export const useCartStore = create<CartState>()(persist((set) => ({
     cart: [],
-    addToCart: (item: MenuItem) => {
+    restaurantId: null,
+    addToCart: (item: MenuItem, restaurantId: string) => {
         set((state) => {
-            const exisitingItem = state.cart.find((cartItem) => cartItem._id === item._id);
-            if (exisitingItem) {
-                // already added in cart then inc qty
-                return {
-                    cart: state?.cart.map((cartItem) => cartItem._id === item._id ? { ...cartItem, quantity: cartItem.quantity + 1 } : cartItem
-                    )
-                };
-            } else {
-                // add cart
-                return {
-                    cart: [...state.cart, { ...item, quantity: 1 }]
-                }
+            // Checkout prices the order from a single restaurant's menu, so a cart
+            // holding items from two restaurants cannot be completed. Ordering from a
+            // different restaurant starts the cart over instead of failing at payment.
+            if (state.restaurantId && state.restaurantId !== restaurantId) {
+                return { cart: [{ ...item, quantity: 1 }], restaurantId };
             }
+
+            const existingItem = state.cart.find((cartItem) => cartItem._id === item._id);
+            if (existingItem) {
+                return {
+                    cart: state.cart.map((cartItem) => cartItem._id === item._id
+                        ? { ...cartItem, quantity: cartItem.quantity + 1 }
+                        : cartItem
+                    ),
+                    restaurantId
+                };
+            }
+
+            return {
+                cart: [...state.cart, { ...item, quantity: 1 }],
+                restaurantId
+            };
         })
     },
     clearCart: () => {
-        set({ cart: [] });
+        set({ cart: [], restaurantId: null });
     },
     removeFromTheCart: (id: string) => {
-        set((state) => ({
-            cart: state.cart.filter((item) => item._id !== id)
-        }))
+        set((state) => {
+            const cart = state.cart.filter((item) => item._id !== id);
+            return { cart, restaurantId: cart.length > 0 ? state.restaurantId : null };
+        })
     },
     incrementQuantity: (id: string) => {
         set((state) => ({
@@ -44,6 +55,11 @@ export const useCartStore = create<CartState>()(persist((set) => ({
 }),
     {
         name: 'cart-name',
-        storage: createJSONStorage(() => localStorage)
+        storage: createJSONStorage(() => localStorage),
+        // Carts saved before restaurantId existed cannot be checked out, because there
+        // is no way to tell which restaurant they came from. Drop them on upgrade
+        // rather than letting the user find out at the payment step.
+        version: 1,
+        migrate: () => ({ cart: [], restaurantId: null } as any)
     }
 ))

@@ -4,7 +4,7 @@ import Signup from "./auth/Signup";
 import ForgotPassword from "./auth/ForgotPassword";
 import ResetPassword from "./auth/ResetPassword";
 import VerifyEmail from "./auth/VerifyEmail";
-import HereSection from "./components/HereSection";
+import Home from "./components/Home";
 import MainLayout from "./layout/MainLayout";
 import Profile from "./components/Profile";
 import SearchPage from "./components/SearchPage";
@@ -63,7 +63,11 @@ const appRouter = createBrowserRouter([
     children: [
       {
         path: "/",
-        element: <HereSection />,
+        element: <Home />,
+      },
+      {
+        path: "/search",
+        element: <SearchPage />,
       },
       {
         path: "/profile",

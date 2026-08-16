@@ -11,21 +11,36 @@ import {
   TableRow,
 } from "./ui/table";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import CheckoutConfirmPage from "./CheckoutConfirmPage";
 import { useCartStore } from "@/store/useCartStore";
 import { CartItem } from "@/types/cartType";
 
 const Cart = () => {
   const [open, setOpen] = useState<boolean>(false);
-  const { cart, decrementQuantity, incrementQuantity } = useCartStore();
+  const { cart, decrementQuantity, incrementQuantity, removeFromTheCart, clearCart } =
+    useCartStore();
 
   let totalAmount = cart.reduce((acc, ele) => {
     return acc + ele.price * ele.quantity;
   }, 0);
+
+  if (cart.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center max-w-7xl mx-auto my-20 gap-4">
+        <h1 className="text-xl font-semibold">Your cart is empty</h1>
+        <p className="text-gray-500">Browse a restaurant and add something you like.</p>
+        <Link to="/">
+          <Button className="bg-orange hover:bg-hoverOrange">Find restaurants</Button>
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col max-w-7xl mx-auto my-10">
       <div className="flex justify-end">
-        <Button variant="link">Clear All</Button>
+        <Button onClick={clearCart} variant="link">Clear All</Button>
       </div>
       <Table>
         <TableHeader>
@@ -40,7 +55,7 @@ const Cart = () => {
         </TableHeader>
         <TableBody>
           {cart.map((item: CartItem) => (
-            <TableRow>
+            <TableRow key={item._id}>
               <TableCell>
                 <Avatar>
                   <AvatarImage src={item.image} alt="" />
@@ -79,7 +94,11 @@ const Cart = () => {
               </TableCell>
               <TableCell>{item.price * item.quantity}</TableCell>
               <TableCell className="text-right">
-                <Button size={"sm"} className="bg-orange hover:bg-hoverOrange">
+                <Button
+                  onClick={() => removeFromTheCart(item._id)}
+                  size={"sm"}
+                  className="bg-orange hover:bg-hoverOrange"
+                >
                   Remove
                 </Button>
               </TableCell>

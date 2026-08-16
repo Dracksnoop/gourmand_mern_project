@@ -5,7 +5,10 @@ export interface CartItem extends MenuItem {
 }
 export type CartState = {
     cart:CartItem[];
-    addToCart:(item:MenuItem) => void;
+    // Which restaurant the current cart belongs to. Checkout needs it, and it is what
+    // lets us notice the user has started ordering somewhere else.
+    restaurantId: string | null;
+    addToCart:(item:MenuItem, restaurantId:string) => void;
     clearCart: () => void;
     removeFromTheCart: (id:string) => void;
     incrementQuantity: (id:string) => void;

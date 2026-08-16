@@ -30,6 +30,8 @@ export type RestaurantState = {
     appliedFilter:string[];
     singleRestaurant: Restaurant | null,
     restaurantOrder:Orders[],
+    allRestaurants: Restaurant[];
+    getAllRestaurants: () => Promise<void>;
     createRestaurant: (formData: FormData) => Promise<void>;
     getRestaurant: () => Promise<void>;
     updateRestaurant: (formData: FormData) => Promise<void>;

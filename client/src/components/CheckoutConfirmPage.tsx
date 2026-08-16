@@ -12,9 +12,9 @@ import { Button } from "./ui/button";
 import { useUserStore } from "@/store/useUserStore";
 import { CheckoutSessionRequest } from "@/types/orderType";
 import { useCartStore } from "@/store/useCartStore";
-import { useRestaurantStore } from "@/store/useRestaurantStore";
 import { useOrderStore } from "@/store/useOrderStore";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 const CheckoutConfirmPage = ({
   open,
@@ -27,13 +27,14 @@ const CheckoutConfirmPage = ({
   const [input, setInput] = useState({
     name: user?.fullname || "",
     email: user?.email || "",
-    contact: user?.contact.toString() || "",
+    contact: user?.contact?.toString() || "",
     address: user?.address || "",
     city: user?.city || "",
     country: user?.country || "",
   });
-  const { cart } = useCartStore();
-  const { restaurant } = useRestaurantStore();
+  // The restaurant id comes from the cart, not from useRestaurantStore: that store
+  // holds the restaurant the signed-in owner manages, which is empty for a customer.
+  const { cart, restaurantId } = useCartStore();
   const { createCheckoutSession, loading } = useOrderStore();
   const changeEventHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -41,7 +42,10 @@ const CheckoutConfirmPage = ({
   };
   const checkoutHandler = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // api implementation start from here
+    if (!restaurantId) {
+      toast.error("Your cart is empty.");
+      return;
+    }
     try {
       const checkoutData: CheckoutSessionRequest = {
         cartItems: cart.map((cartItem) => ({
@@ -52,7 +56,7 @@ const CheckoutConfirmPage = ({
           quantity: cartItem.quantity.toString(),
         })),
         deliveryDetails: input,
-        restaurantId: restaurant?._id as string,
+        restaurantId,
       };
       await createCheckoutSession(checkoutData);
     } catch (error) {
@@ -134,7 +138,7 @@ const CheckoutConfirmPage = ({
                 Please wait
               </Button>
             ) : (
-              <Button className="bg-orange hover:bg-hoverOrange">
+              <Button type="submit" className="bg-orange hover:bg-hoverOrange">
                 Continue To Payment
               </Button>
             )}

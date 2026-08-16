@@ -17,6 +17,16 @@ export const useRestaurantStore = create<RestaurantState>()(persist((set, get) =
     appliedFilter: [],
     singleRestaurant: null,
     restaurantOrder: [],
+    allRestaurants: [],
+    getAllRestaurants: async () => {
+        try {
+            set({ loading: true });
+            const response = await axios.get(`${API_END_POINT}/search`);
+            set({ loading: false, allRestaurants: response.data.data });
+        } catch (error) {
+            set({ loading: false });
+        }
+    },
     createRestaurant: async (formData: FormData) => {
         try {
             set({ loading: true });

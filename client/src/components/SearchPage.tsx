@@ -22,9 +22,12 @@ const SearchPage = () => {
     appliedFilter,
   } = useRestaurantStore();
 
+  // "/search" carries no term and lists everything, so the param is optional here.
+  const searchText = params.text ?? "";
+
   useEffect(() => {
-    searchRestaurant(params.text!, searchQuery, appliedFilter);
-  }, [params.text!, appliedFilter]);
+    searchRestaurant(searchText, searchQuery, appliedFilter);
+  }, [searchText, appliedFilter]);
 
   return (
     <div className="max-w-7xl mx-auto my-10">
@@ -41,7 +44,7 @@ const SearchPage = () => {
             />
             <Button
               onClick={() =>
-                searchRestaurant(params.text!, searchQuery, appliedFilter)
+                searchRestaurant(searchText, searchQuery, appliedFilter)
               }
               className="bg-orange hover:bg-hoverOrange"
             >
@@ -82,7 +85,7 @@ const SearchPage = () => {
               {loading ? (
                 <SearchPageSkeleton />
               ) : !loading && searchedRestaurant?.data.length === 0 ? (
-                <NoResultFound searchText={params.text!} />
+                <NoResultFound searchText={searchText} />
               ) : (
                 searchedRestaurant?.data.map((restaurant: Restaurant) => (
                   <Card
