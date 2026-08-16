@@ -14,18 +14,25 @@ export const addMenu = async (req:Request, res:Response) => {
                 message:"Image is required"
             })
         };
+        // Resolve the restaurant first. Creating the menu up front left an orphaned
+        // document behind whenever the owner had no restaurant to attach it to.
+        const restaurant = await Restaurant.findOne({user:req.id});
+        if(!restaurant){
+            return res.status(404).json({
+                success:false,
+                message:"Create your restaurant before adding menu items"
+            });
+        }
+
         const imageUrl = await uploadImageOnCloudinary(file as Express.Multer.File);
         const menu: any = await Menu.create({
-            name , 
+            name ,
             description,
             price,
             image:imageUrl
         });
-        const restaurant = await Restaurant.findOne({user:req.id});
-        if(restaurant){
-            (restaurant.menus as mongoose.Schema.Types.ObjectId[]).push(menu._id);
-            await restaurant.save();
-        }
+        (restaurant.menus as mongoose.Schema.Types.ObjectId[]).push(menu._id);
+        await restaurant.save();
 
         return res.status(201).json({
             success:true,
@@ -42,6 +49,25 @@ export const editMenu = async (req:Request, res:Response) => {
         const {id} = req.params;
         const {name, description, price} = req.body;
         const file = req.file;
+
+        if(!mongoose.isValidObjectId(id)){
+            return res.status(404).json({
+                success:false,
+                message:"Menu not found!"
+            })
+        }
+
+        // Being an admin is not enough on its own: an owner must not be able to edit
+        // items on somebody else's menu just by knowing the id.
+        const restaurant = await Restaurant.findOne({user:req.id});
+        const ownsMenu = restaurant?.menus.some((menuId) => menuId.toString() === id);
+        if(!ownsMenu){
+            return res.status(403).json({
+                success:false,
+                message:"You can only edit menu items from your own restaurant"
+            })
+        }
+
         const menu = await Menu.findById(id);
         if(!menu){
             return res.status(404).json({

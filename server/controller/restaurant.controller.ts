@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import { Restaurant } from "../models/restaurant.model";
 import { Multer } from "multer";
 import uploadImageOnCloudinary from "../utils/imageUpload";
@@ -113,6 +114,14 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     try {
         const { orderId } = req.params;
         const { status } = req.body;
+
+        if (!mongoose.isValidObjectId(orderId)) {
+            return res.status(404).json({
+                success: false,
+                message: "Order not found"
+            })
+        }
+
         const order = await Order.findById(orderId);
         if (!order) {
             return res.status(404).json({
@@ -120,6 +129,17 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
                 message: "Order not found"
             })
         }
+
+        // Without this an owner could move any order in the system through the delivery
+        // states, including orders placed at a restaurant they have nothing to do with.
+        const restaurant = await Restaurant.findOne({ user: req.id });
+        if (!restaurant || order.restaurant.toString() !== restaurant._id.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "This order belongs to another restaurant"
+            })
+        }
+
         order.status = status;
         await order.save();
         return res.status(200).json({
@@ -175,6 +195,14 @@ export const searchRestaurant = async (req: Request, res: Response) => {
 export const getSingleRestaurant = async (req:Request, res:Response) => {
     try {
         const restaurantId = req.params.id;
+        // findById throws a CastError on anything that isn't a valid ObjectId, which
+        // surfaced as a 500 for what is really just a bad URL.
+        if (!mongoose.isValidObjectId(restaurantId)) {
+            return res.status(404).json({
+                success: false,
+                message: "Restaurant not found"
+            });
+        }
         const restaurant = await Restaurant.findById(restaurantId).populate({
             path:'menus',
             options:{createdAt:-1}
