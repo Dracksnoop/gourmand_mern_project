@@ -1,10 +1,10 @@
-import HereSection from "./HereSection";
+import HeroSection from "./HeroSection";
 import RestaurantList from "./RestaurantList";
 
 const Home = () => {
   return (
     <div>
-      <HereSection />
+      <HeroSection />
       <RestaurantList />
     </div>
   );

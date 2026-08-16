@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import {
   Menubar,
   MenubarContent,
@@ -41,22 +41,40 @@ import { useUserStore } from "@/store/useUserStore";
 import { useCartStore } from "@/store/useCartStore";
 import { useThemeStore } from "@/store/useThemeStore";
 
+// "Krishna Gurjar" -> "KG". Shown until the account has a picture.
+const getInitials = (name: string) =>
+  name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0].toUpperCase())
+    .join("") || "?";
+
+// Shared by every top level link so the current page is obvious.
+const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+  isActive
+    ? "text-orange font-medium"
+    : "text-gray-600 dark:text-gray-300 hover:text-orange transition-colors";
+
 const Navbar = () => {
   const { user, loading, logout } = useUserStore();
   const { cart } = useCartStore();
   const {setTheme} = useThemeStore();
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="flex items-center justify-between h-14">
-        <Link to="/">
+    <div className="sticky top-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur border-b border-gray-100 dark:border-gray-800">
+      <div className="max-w-7xl mx-auto px-4">
+      <div className="flex items-center justify-between h-16">
+        <Link to="/" className="flex items-center gap-2">
+          <UtensilsCrossed className="text-orange" size={22} />
           <h1 className="font-bold md:font-extrabold text-2xl">Gourmand</h1>
         </Link>
         <div className="hidden md:flex items-center gap-10">
           <div className="hidden md:flex items-center gap-6">
-            <Link to="/">Home</Link>
-            <Link to="/profile">Profile</Link>
-            <Link to="/order/status">Order</Link>
+            <NavLink to="/" className={navLinkClass} end>Home</NavLink>
+            <NavLink to="/search" className={navLinkClass}>Restaurants</NavLink>
+            <NavLink to="/order/status" className={navLinkClass}>Orders</NavLink>
+            <NavLink to="/profile" className={navLinkClass}>Profile</NavLink>
 
             {user?.admin && (
               <Menubar>
@@ -93,23 +111,20 @@ const Navbar = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            <Link to="/cart" className="relative cursor-pointer">
+            <Link to="/cart" className="relative cursor-pointer" aria-label="Cart">
               <ShoppingCart />
               {cart.length > 0 && (
-                <Button
-                  size={"icon"}
-                  className="absolute -inset-y-3 left-2 text-xs rounded-full w-4 h-4 bg-red-500 hover:bg-red-500"
-                >
+                <span className="absolute -top-2 -right-2 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-semibold text-white bg-red-500 rounded-full">
                   {cart.length}
-                </Button>
+                </span>
               )}
             </Link>
-            <div>
+            <Link to="/profile">
               <Avatar>
-                <AvatarImage src={user?.profilePicture} alt="profilephoto" />
-                <AvatarFallback>CN</AvatarFallback>
+                <AvatarImage src={user?.profilePicture} alt="" />
+                <AvatarFallback>{getInitials(user?.fullname || "")}</AvatarFallback>
               </Avatar>
-            </div>
+            </Link>
             <div>
               {loading ? (
                 <Button className="bg-orange hover:bg-hoverOrange">
@@ -131,6 +146,7 @@ const Navbar = () => {
           {/* Mobile responsive  */}
           <MobileNavbar />
         </div>
+      </div>
       </div>
     </div>
   );
@@ -222,7 +238,7 @@ const MobileNavbar = () => {
           <div className="flex flex-row items-center gap-2">
             <Avatar>
               <AvatarImage src={user?.profilePicture} />
-              <AvatarFallback>CN</AvatarFallback>
+              <AvatarFallback>{getInitials(user?.fullname || "")}</AvatarFallback>
             </Avatar>
             <h1 className="font-bold">Gourmand</h1>
           </div>

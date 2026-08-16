@@ -38,7 +38,7 @@ const Cart = () => {
   }
 
   return (
-    <div className="flex flex-col max-w-7xl mx-auto my-10">
+    <div className="flex flex-col max-w-7xl mx-auto my-10 px-4">
       <div className="flex justify-end">
         <Button onClick={clearCart} variant="link">Clear All</Button>
       </div>
@@ -59,7 +59,7 @@ const Cart = () => {
               <TableCell>
                 <Avatar>
                   <AvatarImage src={item.image} alt="" />
-                  <AvatarFallback>CN</AvatarFallback>
+                  <AvatarFallback>{item.name.charAt(0)}</AvatarFallback>
                 </Avatar>
               </TableCell>
               <TableCell> {item.name}</TableCell>
