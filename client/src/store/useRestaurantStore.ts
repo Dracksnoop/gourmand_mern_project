@@ -4,8 +4,9 @@ import axios from "axios";
 import { toast } from "sonner";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import { API_BASE_URL } from "@/lib/api";
 
-const API_END_POINT = "https://food-app-yt.onrender.com/api/v1/restaurant";
+const API_END_POINT = `${API_BASE_URL}/restaurant`;
 axios.defaults.withCredentials = true;
 
 

@@ -2,9 +2,10 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import axios from "axios";
 import { LoginInputState, SignupInputState } from "@/schema/userSchema";
+import { API_BASE_URL } from "@/lib/api";
 import { toast } from "sonner";
 
-const API_END_POINT = "https://food-app-yt.onrender.com/api/v1/user"
+const API_END_POINT = `${API_BASE_URL}/user`;
 axios.defaults.withCredentials = true;
 
 type User = {

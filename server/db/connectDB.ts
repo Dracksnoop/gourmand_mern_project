@@ -1,13 +1,12 @@
-// mongopassword=jgUYh0afhTqzd9dC
-// asurendrakumarpatel
 import mongoose from "mongoose";
 
 const connectDB = async () => {
-    try {
-        await mongoose.connect(process.env.MONGO_URI!);
-        console.log('mongoDB connected.');
-    } catch (error) {
-        console.log(error);
+    const uri = process.env.MONGO_URI;
+    if (!uri) {
+        throw new Error("MONGO_URI is not set. Copy .env.example to .env and fill it in.");
     }
-}
+    await mongoose.connect(uri);
+    console.log("MongoDB connected.");
+};
+
 export default connectDB;

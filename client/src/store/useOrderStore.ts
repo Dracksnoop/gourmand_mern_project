@@ -2,8 +2,9 @@ import { CheckoutSessionRequest, OrderState } from "@/types/orderType";
 import axios from "axios";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import { API_BASE_URL } from "@/lib/api";
 
-const API_END_POINT: string = "https://food-app-yt.onrender.com/api/v1/order";
+const API_END_POINT: string = `${API_BASE_URL}/order`;
 axios.defaults.withCredentials = true;
 
 export const useOrderStore = create<OrderState>()(persist((set => ({

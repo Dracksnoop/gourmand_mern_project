@@ -3,8 +3,9 @@ import { toast } from "sonner";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { useRestaurantStore } from "./useRestaurantStore";
+import { API_BASE_URL } from "@/lib/api";
 
-const API_END_POINT = "https://food-app-yt.onrender.com/api/v1/menu";
+const API_END_POINT = `${API_BASE_URL}/menu`;
 axios.defaults.withCredentials = true;
 
 type MenuState = {
